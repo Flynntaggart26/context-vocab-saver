@@ -91,6 +91,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   queue = words.filter((w) => w.nextReview <= Date.now());
   shuffle(queue);
   wireTabs(); wireQuiz(); renderList(); updateCounters();
+  // Live-update when words are saved elsewhere (e.g. review tab was
+  // already open while saving from an article) — no refresh needed.
+  try {
+    chrome.storage.onChanged.addListener(async (changes, area) => {
+      if (area !== 'local' || !changes.words) return;
+      words = changes.words.newValue || [];
+      const known = new Set(queue.map((w) => w.id));
+      if (current) known.add(current.id);
+      for (const w of words) {
+        if (w.nextReview <= Date.now() && !known.has(w.id)) { queue.push(w); known.add(w.id); }
+      }
+      renderList($('#search') ? $('#search').value : '');
+      updateCounters();
+      if (!current) nextCard(); // resume a finished session with fresh cards
+    });
+  } catch { /* older Chrome — refresh still works */ }
   if (location.hash === '#words') selectTab('words');
   nextCard();
 });
