@@ -7,6 +7,9 @@
    ============================================================ */
 'use strict';
 
+// Shared translation helper (offline dict + optional API lookup).
+try { importScripts('dict-tr.js', 'translate.js'); } catch { /* pages load these via <script> instead */ }
+
 const MENU_ID = 'cvs-save-selection';
 const ALARM_DAILY = 'cvs-daily-reminder';
 
@@ -58,15 +61,21 @@ async function saveWord(word, sentence, tab) {
     notify('Already saved', `“${word}” with this sentence is in your deck.`);
     return;
   }
-  words.push({
+  const entry = {
     id: `${now}-${Math.random().toString(36).slice(2, 8)}`,
     word, sentence,
     source: tab?.url ? new URL(tab.url).hostname : 'menu',
     title: (tab?.title || '').slice(0, 120),
     createdAt: now, reviews: 0, ease: 2.5, interval: 0, nextReview: now
-  });
+  };
+  // Pre-fill Turkish gloss (offline dict first, API if enabled in Settings).
+  try {
+    const { trTranslate = true } = await chrome.storage.sync.get('trTranslate');
+    if (typeof ensureTranslation === 'function') await ensureTranslation(entry, trTranslate);
+  } catch { /* offline — gloss backfills on the review page */ }
+  words.push(entry);
   await chrome.storage.local.set({ words });
-  notify('Saved ✓', `“${word}” — review it from the toolbar popup.`);
+  notify('Saved ✓', `“${word}”${entry.translation ? ' = ' + entry.translation : ''} — review it from the toolbar popup.`);
 }
 
 /* ---------- daily reminder ---------- */

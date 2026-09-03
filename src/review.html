@@ -20,7 +20,11 @@
       <article class="card" id="quiz-card" hidden>
         <p class="muted small" id="quiz-meta"></p>
         <p class="sentence" id="quiz-sentence"></p>
-        <button id="btn-reveal" class="btn primary">Show word</button>
+        <p class="tr" id="quiz-tr" hidden></p>
+        <div class="btn-row">
+          <button id="btn-hint" class="btn small" hidden>💡 Türkçe ipucu</button>
+          <button id="btn-reveal" class="btn primary">Show word</button>
+        </div>
         <div id="answer-zone" hidden>
           <p class="answer" id="quiz-answer"></p>
           <p class="muted small">How well did you recall it?</p>
@@ -44,6 +48,8 @@
       <div id="word-list"></div>
     </section>
   </main>
+  <script src="dict-tr.js"></script>
+  <script src="translate.js"></script>
   <script src="review.js"></script>
 </body>
 </html>

@@ -46,6 +46,19 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 document.addEventListener('DOMContentLoaded', async () => {
   ({ words = [] } = await chrome.storage.local.get('words'));
   $('#words-n').textContent = words.length;
+  // Backfill Turkish glosses for words saved before v0.2.0 or via
+  // the content script (offline dict first, API if enabled).
+  try {
+    const { trTranslate = true } = await chrome.storage.sync.get('trTranslate');
+    let changed = false;
+    for (const w of words) {
+      if (!w.translation && typeof ensureTranslation === 'function') {
+        await ensureTranslation(w, trTranslate);
+        if (w.translation) changed = true;
+      }
+    }
+    if (changed) await persist();
+  } catch { /* offline — quiz works without glosses */ }
   queue = words.filter((w) => w.nextReview <= Date.now());
   shuffle(queue);
   wireTabs(); wireQuiz(); renderList();
@@ -71,6 +84,10 @@ function selectTab(which) {
 
 /* ---------- quiz ---------- */
 function wireQuiz() {
+  $('#btn-hint').onclick = () => {
+    $('#quiz-tr').hidden = false;
+    $('#btn-hint').disabled = true;
+  };
   $('#btn-reveal').onclick = () => {
     $('#btn-reveal').hidden = true;
     $('#answer-zone').hidden = false;
@@ -104,9 +121,14 @@ function nextCard() {
   $('#quiz-card').hidden = false;
   $('#btn-reveal').hidden = false;
   $('#answer-zone').hidden = true;
+  // Turkish hint starts hidden on every card.
+  $('#quiz-tr').hidden = true;
+  $('#btn-hint').hidden = !current.translation;
+  $('#btn-hint').disabled = false;
   $('#progress-label').textContent = `Card ${doneThisSession + 1} of ${total} · from ${current.source}`;
   $('#quiz-meta').textContent = `from ${current.source}`;
   $('#quiz-sentence').textContent = blankWord(current.sentence, current.word);
+  if (current.translation) $('#quiz-tr').textContent = `🇹🇷 ${current.translation}`;
 }
 
 /* ---------- word list ---------- */
@@ -120,7 +142,7 @@ function renderList(filter = '') {
   $('#word-list').innerHTML = items.length ? items.map((w) => {
     const due = w.nextReview <= Date.now();
     return `<div class="word-row ${due ? 'due' : ''}">
-      <div><strong>${esc(w.word)}</strong> ${due ? '<span class="pill">due</span>' : ''}<br>
+      <div><strong>${esc(w.word)}</strong>${w.translation ? ` <span class="tr-inline">🇹🇷 ${esc(w.translation)}</span>` : ''} ${due ? '<span class="pill">due</span>' : ''}<br>
       <span class="muted small">${esc(w.sentence)}</span><br>
       <span class="muted small">${esc(w.source)} · reviewed ${w.reviews || 0}×</span></div>
       <button class="btn small danger" data-del="${w.id}" title="Delete">✕</button>

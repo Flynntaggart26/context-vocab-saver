@@ -3,7 +3,7 @@
 'use strict';
 
 const $ = (s) => document.querySelector(s);
-const DEFAULTS = { doubleClick: true, reminders: true, reminderHour: 19, maxWords: 4 };
+const DEFAULTS = { doubleClick: true, reminders: true, reminderHour: 19, maxWords: 4, trTranslate: true };
 
 document.addEventListener('DOMContentLoaded', async () => {
   const s = { ...DEFAULTS, ...(await chrome.storage.sync.get(DEFAULTS)) };
@@ -11,12 +11,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   $('#opt-remind').checked = s.reminders;
   $('#opt-hour').value = `${String(s.reminderHour).padStart(2, '0')}:00`;
   $('#opt-max').value = s.maxWords;
+  $('#opt-tr').checked = s.trTranslate;
 
   const save = async () => {
     await chrome.storage.sync.set({
       doubleClick: $('#opt-double').checked,
       reminders: $('#opt-remind').checked,
       reminderHour: Number($('#opt-hour').value.split(':')[0]),
+      trTranslate: $('#opt-tr').checked,
       maxWords: Math.min(8, Math.max(1, Number($('#opt-max').value) || 4))
     });
     $('#saved-msg').textContent = 'Saved ✓';

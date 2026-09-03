@@ -65,3 +65,9 @@ h2 { font-size: 1.3rem; }
 .pill { background: #ede9fe; color: #6d28d9; border-radius: 999px; padding: 1px 8px; font-size: .75rem; font-weight: 700; }
 .row { display: flex; gap: 8px; align-items: center; margin: 10px 0; font-size: .92rem; }
 .row input[type="checkbox"] { width: 1.1rem; height: 1.1rem; accent-color: #7c3aed; }
+.tr {
+  font-size: 1.1rem; font-weight: 700; color: #b91c1c;
+  background: #fef2f2; border: 1.5px dashed #f87171;
+  border-radius: 12px; padding: 8px 14px; margin: 10px 0;
+}
+.tr-inline { color: #b91c1c; font-weight: 700; font-size: .92rem; }

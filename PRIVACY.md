@@ -23,6 +23,15 @@ When you save a word, the extension stores locally (`chrome.storage`):
 You can export it (JSON backup), import it, or delete words at any time from
 the built-in word manager. Uninstalling the extension removes all of it.
 
+## Turkish translations (optional, on by default)
+
+If enabled in Settings, the extension looks up a Turkish gloss for each saved
+word: first in its built-in offline dictionary, then — only for words the
+dictionary doesn't cover — via the free MyMemory translation API
+(`api.mymemory.translated.net`). Only the single saved word is sent, nothing
+else; the returned gloss is cached on your device. Turn it off anytime in
+Settings → "Turkish meanings".
+
 ## Permissions — why each is needed
 
 | Permission | Why |
@@ -31,6 +40,7 @@ the built-in word manager. Uninstalling the extension removes all of it.
 | `contextMenus` | "Save selection" right-click item |
 | `alarms` + `notifications` | Optional daily review reminder (toggleable in Settings) |
 | Page content access (`http/https`) | Detect your double-clicked word and capture its sentence — only when you interact |
+| Translation API (`api.mymemory.translated.net`) | Fetch Turkish glosses for words missing from the offline dictionary — only if enabled |
 
 ## Contact
 
