@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Review — Context Vocab Saver</title>
+  <link rel="stylesheet" href="ui.css" />
+</head>
+<body class="page">
+  <main class="wrap">
+    <nav class="tabs" role="tablist" aria-label="Views">
+      <button role="tab" id="tab-quiz" aria-selected="true">Quiz</button>
+      <button role="tab" id="tab-words" aria-selected="false">My words (<span id="words-n">0</span>)</button>
+    </nav>
+
+    <!-- QUIZ VIEW -->
+    <section id="view-quiz" role="tabpanel" aria-labelledby="tab-quiz">
+      <div class="progress"><div id="progress-fill"></div></div>
+      <p id="progress-label" class="muted">Loading deck…</p>
+      <article class="card" id="quiz-card" hidden>
+        <p class="muted small" id="quiz-meta"></p>
+        <p class="sentence" id="quiz-sentence"></p>
+        <button id="btn-reveal" class="btn primary">Show word</button>
+        <div id="answer-zone" hidden>
+          <p class="answer" id="quiz-answer"></p>
+          <p class="muted small">How well did you recall it?</p>
+          <div class="grades">
+            <button class="btn grade g0" data-g="0">Again</button>
+            <button class="btn grade g3" data-g="3">Hard</button>
+            <button class="btn grade g4" data-g="4">Good</button>
+            <button class="btn grade g5" data-g="5">Easy</button>
+          </div>
+        </div>
+      </article>
+      <article class="card center" id="done-card" hidden>
+        <h2>Deck clear! 🎉</h2>
+        <p class="muted">No more words due. Come back tomorrow — or save new words while you read.</p>
+      </article>
+    </section>
+
+    <!-- WORD LIST VIEW -->
+    <section id="view-words" role="tabpanel" aria-labelledby="tab-words" hidden>
+      <input type="search" id="search" placeholder="Search words or sentences…" aria-label="Search words" />
+      <div id="word-list"></div>
+    </section>
+  </main>
+  <script src="review.js"></script>
+</body>
+</html>

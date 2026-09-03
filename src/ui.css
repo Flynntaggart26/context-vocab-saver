@@ -1,0 +1,67 @@
+/* Shared UI for popup / review / options. Same gradient identity
+   as the Grammar Mastery project — one portfolio, one look. */
+:root {
+  --text: #141a2e; --muted: #5b6b8c; --line: rgba(20,26,46,.1);
+  --card: #ffffff; --bg: #eef1ff;
+  --primary: #6366f1; --accent: #ec4899;
+  --grad: linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899);
+  --radius: 16px;
+  --font: "Inter", "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--font); color: var(--text); background: var(--bg); }
+body.popup { width: 320px; padding: 16px; }
+body.page { min-height: 100vh; }
+.wrap { max-width: 640px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { font-size: 1.05rem; margin: 0; letter-spacing: -.01em; }
+h2 { font-size: 1.3rem; }
+.muted { color: var(--muted); } .small { font-size: .82rem; } .center { text-align: center; }
+
+.brand { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
+.brand p { margin: 0; font-size: .82rem; }
+.logo {
+  font-size: 1.4rem; width: 44px; height: 44px; display: grid; place-items: center;
+  background: var(--grad); border-radius: 14px; box-shadow: 0 6px 18px rgba(139,92,246,.4);
+}
+
+.due-card {
+  background: var(--grad); color: #fff; border-radius: var(--radius);
+  padding: 14px 16px; display: flex; gap: 10px; align-items: baseline; margin-bottom: 12px;
+}
+.due-card strong { font-size: 1.8rem; }
+
+.btn {
+  border: 1.5px solid var(--line); background: var(--card); color: var(--text);
+  border-radius: 12px; padding: 9px 14px; font-weight: 700; font-size: .9rem;
+  cursor: pointer; font-family: inherit; transition: transform .12s ease;
+}
+.btn:hover { transform: translateY(-1px); border-color: var(--primary); }
+.btn:disabled { opacity: .55; cursor: default; transform: none; }
+.btn.primary { background: var(--grad); border: none; color: #fff; box-shadow: 0 8px 20px rgba(139,92,246,.35); }
+.btn.small { padding: 6px 10px; font-size: .82rem; }
+.btn.danger { color: #dc2626; }
+.btn-col { display: grid; gap: 8px; }
+.btn-row { display: flex; gap: 8px; } .btn-row .btn { flex: 1; }
+.tip { font-size: .8rem; margin: 12px 2px 0; }
+
+.tabs { display: flex; gap: 6px; background: #fff; border: 1px solid var(--line); padding: 5px; border-radius: 999px; width: fit-content; margin-bottom: 16px; }
+.tabs button { border: none; background: none; padding: 8px 18px; border-radius: 999px; font-weight: 700; color: var(--muted); cursor: pointer; font-family: inherit; }
+.tabs button[aria-selected="true"] { background: var(--grad); color: #fff; }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 24px; box-shadow: 0 12px 40px rgba(79,70,229,.12); }
+.sentence { font-size: 1.25rem; line-height: 1.7; }
+.answer { font-size: 1.6rem; font-weight: 800; background: var(--grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.grades { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 8px; }
+.grade.g0 { border-color: #dc2626; color: #dc2626; }
+.grade.g3 { border-color: #ea580c; color: #ea580c; }
+.grade.g4 { border-color: #059669; color: #059669; }
+.grade.g5 { border-color: #6366f1; color: #6366f1; }
+.progress { height: 8px; background: #e0e7ff; border-radius: 999px; overflow: hidden; }
+#progress-fill { height: 100%; width: 0; background: var(--grad); transition: width .3s ease; }
+
+#search { width: 100%; padding: 10px 14px; border-radius: 12px; border: 1.5px solid var(--line); font-size: .95rem; margin-bottom: 10px; font-family: inherit; }
+.word-row { display: flex; justify-content: space-between; gap: 10px; align-items: start; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 8px; }
+.word-row.due { border-color: var(--primary); }
+.pill { background: #ede9fe; color: #6d28d9; border-radius: 999px; padding: 1px 8px; font-size: .75rem; font-weight: 700; }
+.row { display: flex; gap: 8px; align-items: center; margin: 10px 0; font-size: .92rem; }
+.row input[type="checkbox"] { width: 1.1rem; height: 1.1rem; accent-color: #7c3aed; }

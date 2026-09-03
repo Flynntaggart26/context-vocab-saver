@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="ui.css" />
+</head>
+<body class="popup">
+  <header class="brand">
+    <span class="logo" aria-hidden="true">📖</span>
+    <div>
+      <h1>Context Vocab Saver</h1>
+      <p id="stats" class="muted">Loading…</p>
+    </div>
+  </header>
+
+  <div class="due-card" id="due-card">
+    <strong id="due-count">0</strong>
+    <span>words due for review</span>
+  </div>
+
+  <div class="btn-col">
+    <button id="btn-review" class="btn primary">Start review →</button>
+    <button id="btn-words" class="btn">My words</button>
+    <div class="btn-row">
+      <button id="btn-export" class="btn small" title="Download words as JSON">Export</button>
+      <button id="btn-import" class="btn small" title="Restore from a JSON backup">Import</button>
+      <button id="btn-options" class="btn small" title="Settings">⚙️</button>
+    </div>
+  </div>
+
+  <input type="file" id="file-import" accept="application/json" hidden />
+  <p class="tip muted">Tip: double-click any English word on a page to save it with its sentence.</p>
+  <script src="popup.js"></script>
+</body>
+</html>
