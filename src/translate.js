@@ -39,12 +39,27 @@ function trLocal(word) {
   return null;
 }
 
+/** fetch JSON with a hard timeout — a stalled free API must never
+    hang the quiz. Throws on timeout / http error / bad JSON. */
+async function fetchJson(url, ms = 8000) {
+  let ctl = null, timer = null;
+  try {
+    if (typeof AbortController !== 'undefined') {
+      ctl = new AbortController();
+      timer = setTimeout(() => ctl.abort(), ms);
+    }
+    const res = await fetch(url, ctl ? { signal: ctl.signal } : undefined);
+    if (!res.ok) throw new Error('http ' + res.status);
+    return await res.json();
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 /** Online lookup of a single word. Throws on quota/network/empty. */
 async function trFetch(word) {
   const url = `${TR_API_URL}?q=${encodeURIComponent(word)}&langpair=en|tr`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('translate http ' + res.status);
-  const data = await res.json();
+  const data = await fetchJson(url);
   const t = (data && data.responseData && data.responseData.translatedText || '').trim();
   if (!t || /^MYMEMORY WARNING/i.test(t)) throw new Error('translate quota');
   if (t.toLowerCase() === String(word).toLowerCase()) throw new Error('untranslated');
@@ -112,9 +127,7 @@ function trMatches(gloss, typed) {
 const EN_DICT_URL = 'https://api.dictionaryapi.dev/api/v2/entries/en/';
 
 async function enFetch(word) {
-  const res = await fetch(EN_DICT_URL + encodeURIComponent(String(word).toLowerCase()));
-  if (!res.ok) throw new Error('dict http ' + res.status);
-  const data = await res.json();
+  const data = await fetchJson(EN_DICT_URL + encodeURIComponent(String(word).toLowerCase()));
   const first = Array.isArray(data) ? data[0] : null;
   const def = first && first.meanings && first.meanings[0]
     && first.meanings[0].definitions && first.meanings[0].definitions[0];

@@ -67,30 +67,12 @@ function letterHint(gloss, level) {
 /* ---------- boot ---------- */
 document.addEventListener('DOMContentLoaded', async () => {
   ({ words = [] } = await chrome.storage.local.get('words'));
-  // Backfill Turkish glosses + English definitions (old entries +
-  // content-script saves). Sequential to respect free-API limits.
-  try {
-    const { trTranslate = true } = await chrome.storage.sync.get('trTranslate');
-    const missing = words.filter((w) => !w.translation || !w.definition);
-    let n = 0, changed = false;
-    for (const w of missing) {
-      n++;
-      $('#progress-label').textContent = `Anlamlar yükleniyor (${n}/${missing.length})…`;
-      if (!w.translation && typeof ensureTranslation === 'function') {
-        await ensureTranslation(w, trTranslate);
-        if (w.translation) changed = true;
-      }
-      if (typeof ensureDefinition === 'function') {
-        const before = w.definition;
-        await ensureDefinition(w);
-        if (w.definition !== before) changed = true;
-      }
-    }
-    if (changed) await persist();
-  } catch { /* offline — quiz works with word + sentence alone */ }
   queue = words.filter((w) => w.nextReview <= Date.now());
   shuffle(queue);
   wireTabs(); wireQuiz(); renderList(); updateCounters();
+  if (location.hash === '#words') selectTab('words');
+  nextCard(); // quiz is usable instantly — meanings backfill below
+  backfillMeanings(); // non-blocking: never holds the quiz hostage
   // Live-update when words are saved elsewhere (e.g. review tab was
   // already open while saving from an article) — no refresh needed.
   try {
@@ -107,9 +89,42 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!current) nextCard(); // resume a finished session with fresh cards
     });
   } catch { /* older Chrome — refresh still works */ }
-  if (location.hash === '#words') selectTab('words');
-  nextCard();
 });
+
+/* Backfill Turkish glosses + English definitions in the background.
+   Sequential to respect free-API limits; each fetch has an 8s timeout
+   so slow networks can neither block nor break the quiz. */
+async function backfillMeanings() {
+  try {
+    const { trTranslate = true } = await chrome.storage.sync.get('trTranslate');
+    let changed = false;
+    for (const w of words) {
+      if (!w.translation && typeof ensureTranslation === 'function') {
+        await ensureTranslation(w, trTranslate);
+        if (w.translation) changed = true;
+      }
+      if (!w.definition && typeof ensureDefinition === 'function') {
+        await ensureDefinition(w);
+        if (w.definition) changed = true;
+      }
+    }
+    if (changed) {
+      await persist();
+      renderList($('#search') ? $('#search').value : '');
+      refreshCurrentCard();
+    }
+  } catch { /* quiz already works with word + sentence alone */ }
+}
+
+/* If meanings arrived while a card is on screen, refresh its extras. */
+function refreshCurrentCard() {
+  if (!current || !$('#feedback').hidden) return;
+  if (current.translation) $('#btn-hint').hidden = false;
+  if (current.definition && $('#quiz-def').hidden) {
+    $('#quiz-def').hidden = false;
+    $('#quiz-def').innerHTML = `${current.pos ? `<span class="pill">${esc(current.pos)}</span> ` : ''}“${esc(current.definition)}”${current.phonetic ? ` <span class="muted">/${esc(current.phonetic)}/</span>` : ''}`;
+  }
+}
 
 const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[a[i], a[j]] = [a[j], a[i]]; } };
 
