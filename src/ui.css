@@ -5,6 +5,7 @@
   --card: #ffffff; --bg: #eef1ff;
   --primary: #6366f1; --accent: #ec4899;
   --grad: linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899);
+  --grad-soft: #f1f0ff;
   --radius: 16px;
   --font: "Inter", "SF Pro Display", "Segoe UI", system-ui, sans-serif;
 }
@@ -71,3 +72,34 @@ h2 { font-size: 1.3rem; }
   border-radius: 12px; padding: 8px 14px; margin: 10px 0;
 }
 .tr-inline { color: #b91c1c; font-weight: 700; font-size: .92rem; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* ---------- instructive quiz (v0.3.0) ---------- */
+.session-bar { display: flex; gap: 8px; margin: 10px 0 12px; flex-wrap: wrap; }
+.session-bar .pill { background: var(--card); padding: 6px 14px; font-size: .88rem; }
+.streak { border: 1.5px solid #fdba74; }
+.card.quiz { border-top: 6px solid transparent; border-image: linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899) 1; }
+.quiz-word {
+  font-size: 2.2rem; margin: .2rem 0; letter-spacing: -.02em;
+  background: var(--grad); -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.quiz-def { font-size: 1.02rem; color: var(--muted); font-style: italic; margin: .2rem 0 .6rem; }
+.sentence.ctx { font-size: 1.05rem; background: var(--grad-soft); border-radius: 12px; padding: 10px 14px; }
+mark { background: linear-gradient(120deg, #fde68a, #fcd34d); border-radius: 4px; padding: 0 3px; }
+.answer-row { display: flex; gap: 8px; margin-top: 10px; }
+.answer-row input { flex: 1; }
+.answer-row .btn { white-space: nowrap; }
+.fb { border-radius: 14px; padding: 14px 16px; margin-top: 12px; animation: pop .25s ease; }
+.fb.ok { background: #dcfce7; border: 1.5px solid #059669; }
+.fb.bad { background: #fee2e2; border: 1.5px solid #dc2626; animation: shake .3s ease; }
+.fb .btn { margin-top: 8px; }
+@keyframes pop { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes shake { 0%, 100% { transform: none; } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+.word-row.learned { border-color: #059669; background: #f0fdf4; }
+.pill.green { background: #dcfce7; color: #047857; }
+.row-btns { display: flex; gap: 6px; }
+@media (max-width: 480px) {
+  .quiz-word { font-size: 1.7rem; }
+  .answer-row { flex-direction: column; }
+}

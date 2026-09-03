@@ -4,7 +4,7 @@
 > double-click any word online to save it **with its real sentence**, then quiz
 > yourself later with spaced repetition.
 
-[![Version](https://img.shields.io/badge/version-0.2.0-8b5cf6?style=flat-square)](https://github.com/Flynntaggart26/context-vocab-saver/releases)
+[![Version](https://img.shields.io/badge/version-0.3.0-8b5cf6?style=flat-square)](https://github.com/Flynntaggart26/context-vocab-saver/releases)
 [![Manifest](https://img.shields.io/badge/manifest-V3-2563eb?style=flat-square)](#)
 [![Privacy](https://img.shields.io/badge/data-local--first-059669?style=flat-square)](PRIVACY.md)
 [![License](https://img.shields.io/badge/license-MIT-ec4899?style=flat-square)](#-license)
@@ -19,8 +19,9 @@ with the word blanked out.
 |---|---|
 | 🖱️ **Double-click** any word → floating *＋ Save* bubble | Word + full enclosing sentence + source site, stored locally |
 | 🖱️ **Right-click → Save selection** (context menu) | Same capture path, works on selections of up to N words |
-| 🧠 **SM-2 spaced repetition quiz** | Sentence shown with the word blanked (`_____`); grade Again / Hard / Good / Easy to schedule the next review |
-| 🇹🇷 **Turkish meanings** | Every card shows a Türkçe hint button: ~200-word offline dictionary first, free API lookup for the rest (cached, toggleable) |
+| 🧠 **Typed Turkish quiz** | Card shows the English word + English definition + highlighted sentence → **type** the Türkçe anlam. Correct = ✅ learned (30 days); wrong = answer shown + card requeued. Letter hints, 🔥 streak, mastery counter |
+| 🇹🇷 **Turkish meanings** | ~300-word offline dictionary with stemming first, free API lookup for the rest (cached, toggleable). Forgiving matching: case/punctuation tolerant, any comma-variant accepted |
+| 📖 **English definitions** | Free dictionary API (cached): definition + phonetic + part-of-speech on every card |
 | 🔔 **Daily reminder** | Notifies you when reviews are due (configurable time, toggleable) |
 | 📋 **Word manager** | Search, due-badges, per-word delete, JSON export/import backup |
 | ⚙️ **Options** | Double-click on/off, reminder time, max words per save |
@@ -42,7 +43,7 @@ context-vocab-saver/
 │   ├── content.js       # dbl-click capture, sentence extraction, save bubble
 │   ├── background.js    # context menu, daily alarm, notifications, welcome
 │   ├── popup.html/js    # toolbar popup: stats, review entry, export/import
-│   ├── review.html/js   # SM-2 quiz + searchable word manager
+│   ├── review.html/js   # typed-TR quiz (learned/wrong, streak, hints) + word manager
 │   ├── options.html/js  # synced settings
 │   ├── dict-tr.js       # bundled offline EN→TR core glossary (~200 words)
 │   ├── translate.js     # shared helper: local dict → MyMemory API → cache

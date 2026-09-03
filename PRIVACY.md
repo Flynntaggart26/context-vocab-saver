@@ -32,6 +32,12 @@ dictionary doesn't cover — via the free MyMemory translation API
 else; the returned gloss is cached on your device. Turn it off anytime in
 Settings → "Turkish meanings".
 
+## English definitions (on by default)
+
+To make quiz cards instructive, the extension fetches a short English
+definition (+ phonetic) per word from the free dictionaryapi.dev service and
+caches it on your device. Again, only the single word is sent.
+
 ## Permissions — why each is needed
 
 | Permission | Why |
@@ -41,6 +47,7 @@ Settings → "Turkish meanings".
 | `alarms` + `notifications` | Optional daily review reminder (toggleable in Settings) |
 | Page content access (`http/https`) | Detect your double-clicked word and capture its sentence — only when you interact |
 | Translation API (`api.mymemory.translated.net`) | Fetch Turkish glosses for words missing from the offline dictionary — only if enabled |
+| Dictionary API (`api.dictionaryapi.dev`) | Fetch a short English definition per word for quiz cards (cached on-device) |
 
 ## Contact
 

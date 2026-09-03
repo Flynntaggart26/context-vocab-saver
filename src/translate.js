@@ -74,3 +74,66 @@ async function ensureTranslation(entry, useApi) {
   }
   return entry;
 }
+
+/* ============================================================
+   Turkish answer matching (for the typed quiz)
+   ------------------------------------------------------------
+   - Turkish-aware lowercase (I→ı, İ→i via tr-TR locale)
+   - punctuation/whitespace tolerant
+   - comma-separated glosses each count ("yapmak, edinmek" → either)
+   ============================================================ */
+function normTr(s) {
+  return String(s || '')
+    .toLocaleLowerCase('tr-TR')
+    .replace(/[.,!?;:'"()«»„“”‘’]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** All acceptable answers for a stored gloss. */
+function trVariants(gloss) {
+  return String(gloss || '')
+    .split(',')
+    .map(normTr)
+    .filter(Boolean);
+}
+
+/** True when the learner's typed answer matches any variant. */
+function trMatches(gloss, typed) {
+  const t = normTr(typed);
+  if (!t) return false;
+  return trVariants(gloss).includes(t);
+}
+
+/* ============================================================
+   English definitions (free dictionaryapi.dev, no key, cached)
+   Shown on the quiz card so the learner recalls TR from meaning.
+   ============================================================ */
+const EN_DICT_URL = 'https://api.dictionaryapi.dev/api/v2/entries/en/';
+
+async function enFetch(word) {
+  const res = await fetch(EN_DICT_URL + encodeURIComponent(String(word).toLowerCase()));
+  if (!res.ok) throw new Error('dict http ' + res.status);
+  const data = await res.json();
+  const first = Array.isArray(data) ? data[0] : null;
+  const def = first && first.meanings && first.meanings[0]
+    && first.meanings[0].definitions && first.meanings[0].definitions[0];
+  if (!def || !def.definition) throw new Error('no definition');
+  return {
+    definition: def.definition,
+    phonetic: first.phonetic || (first.phonetics || []).find((p) => p.text)?.text || '',
+    pos: (first.meanings[0] && first.meanings[0].partOfSpeech) || '',
+  };
+}
+
+/** Fill entry.definition/phonetic/pos once, then reuse. Never throws. */
+async function ensureDefinition(entry) {
+  try {
+    if (entry.definition) return entry;
+    const d = await enFetch(entry.word);
+    entry.definition = d.definition;
+    entry.phonetic = d.phonetic;
+    entry.pos = d.pos;
+  } catch { /* offline or unknown word — card works without it */ }
+  return entry;
+}

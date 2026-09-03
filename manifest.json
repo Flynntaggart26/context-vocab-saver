@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "Context Vocab Saver",
   "short_name": "VocabSaver",
-  "version": "0.2.0",
-  "description": "Double-click any English word to save it with its real sentence. Quiz yourself later with spaced repetition — words learned in context.",
+  "version": "0.3.0",
+  "description": "Double-click any English word to save it with its real sentence. Type its Turkish meaning to mark it learned — words learned in context.",
   "minimum_chrome_version": "116",
 
   "icons": {
@@ -41,6 +41,6 @@
 
   "permissions": ["storage", "contextMenus", "alarms", "notifications"],
 
-  "host_permissions": ["https://api.mymemory.translated.net/*"],
+  "host_permissions": ["https://api.mymemory.translated.net/*", "https://api.dictionaryapi.dev/*"],
   "web_accessible_resources": []
 }

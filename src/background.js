@@ -73,6 +73,10 @@ async function saveWord(word, sentence, tab) {
     const { trTranslate = true } = await chrome.storage.sync.get('trTranslate');
     if (typeof ensureTranslation === 'function') await ensureTranslation(entry, trTranslate);
   } catch { /* offline — gloss backfills on the review page */ }
+  // Pre-fill English definition for the quiz prompt (cached, free API).
+  try {
+    if (typeof ensureDefinition === 'function') await ensureDefinition(entry);
+  } catch { /* offline — card works without it */ }
   words.push(entry);
   await chrome.storage.local.set({ words });
   notify('Saved ✓', `“${word}”${entry.translation ? ' = ' + entry.translation : ''} — review it from the toolbar popup.`);

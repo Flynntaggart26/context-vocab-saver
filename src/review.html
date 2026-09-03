@@ -17,24 +17,25 @@
     <section id="view-quiz" role="tabpanel" aria-labelledby="tab-quiz">
       <div class="progress"><div id="progress-fill"></div></div>
       <p id="progress-label" class="muted">Loading deck…</p>
-      <article class="card" id="quiz-card" hidden>
+      <div class="session-bar">
+        <span class="pill streak" title="Doğru serisi (ipucu kullanmadan)">🔥 <b id="streak">0</b></span>
+        <span class="pill" title="Öğrenilen kelimeler">✅ <b id="learned-n">0</b>/<span id="total-n">0</span> öğrenildi</span>
+      </div>
+      <article class="card quiz" id="quiz-card" hidden>
         <p class="muted small" id="quiz-meta"></p>
-        <p class="sentence" id="quiz-sentence"></p>
+        <h2 class="quiz-word" id="quiz-word"></h2>
+        <p class="quiz-def" id="quiz-def" hidden></p>
+        <p class="sentence ctx" id="quiz-sentence"></p>
         <p class="tr" id="quiz-tr" hidden></p>
+        <label class="sr-only" for="quiz-input">Türkçe anlamını yaz</label>
+        <div class="answer-row">
+          <input type="text" id="quiz-input" placeholder="Türkçe anlamını yaz…" autocomplete="off" />
+          <button id="btn-check" class="btn primary">Kontrol et</button>
+        </div>
         <div class="btn-row">
-          <button id="btn-hint" class="btn small" hidden>💡 Türkçe ipucu</button>
-          <button id="btn-reveal" class="btn primary">Show word</button>
+          <button id="btn-hint" class="btn small">💡 Harf ipucu</button>
         </div>
-        <div id="answer-zone" hidden>
-          <p class="answer" id="quiz-answer"></p>
-          <p class="muted small">How well did you recall it?</p>
-          <div class="grades">
-            <button class="btn grade g0" data-g="0">Again</button>
-            <button class="btn grade g3" data-g="3">Hard</button>
-            <button class="btn grade g4" data-g="4">Good</button>
-            <button class="btn grade g5" data-g="5">Easy</button>
-          </div>
-        </div>
+        <div id="feedback" hidden></div>
       </article>
       <article class="card center" id="done-card" hidden>
         <h2>Deck clear! 🎉</h2>

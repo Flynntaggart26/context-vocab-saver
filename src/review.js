@@ -1,8 +1,12 @@
 /* ============================================================
-   Review page: SM-2-lite quiz + word list management.
-   - Quiz shows the SENTENCE with the word blanked out.
-   - Grading (0/3/4/5) schedules the next review.
-   - All data stays in chrome.storage.local (offline).
+   Review page v0.3.0: typed Turkish quiz + word manager.
+   ------------------------------------------------------------
+   Flow per card: English word + English definition + sentence →
+   learner TYPES the Turkish meaning → correct = learned (30 days),
+   wrong = correct answer shown + card requeued ("study again").
+   All data stays in chrome.storage.local.
+   Depends on: dict-tr.js + translate.js (normTr, trMatches,
+   ensureTranslation, ensureDefinition) loaded before this file.
    ============================================================ */
 'use strict';
 
@@ -14,54 +18,79 @@ let words = [];   // full deck
 let queue = [];   // due cards this session
 let current = null;
 let doneThisSession = 0;
-
-/* ---------- SM-2-lite scheduling ---------- */
-function schedule(card, grade) {
-  card.reviews = (card.reviews || 0) + 1;
-  if (grade === 0) {
-    card.interval = 0;
-    card.nextReview = Date.now() + 10 * MIN;
-    card.ease = Math.max(1.3, (card.ease || 2.5) - 0.2);
-    queue.push(card); // relearn within this session
-  } else {
-    if (card.reviews === 1) card.interval = 1;
-    else if (card.reviews === 2) card.interval = 3;
-    else card.interval = Math.round(card.interval * card.ease);
-    if (grade === 3) card.ease = Math.max(1.3, card.ease - 0.15);
-    if (grade === 5) card.ease = card.ease + 0.1;
-    if (grade === 5) card.interval = Math.round(card.interval * 1.3);
-    card.nextReview = Date.now() + card.interval * DAY;
-  }
-}
-
-function blankWord(sentence, word) {
-  const i = sentence.toLowerCase().indexOf(word.toLowerCase());
-  if (i === -1) return sentence; // word form differs — show full context
-  return sentence.slice(0, i) + '_____' + sentence.slice(i + word.length);
-}
+let hintLevel = 0;
+let stats = { correct: 0, wrong: 0, streak: 0 };
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/* ---------- learning state transitions (pure-ish, testable) ---------- */
+function markLearned(card, now = Date.now()) {
+  card.learned = true;
+  card.learnedAt = now;
+  card.reviews = (card.reviews || 0) + 1;
+  card.ease = Math.min(3.0, (card.ease || 2.5) + 0.1);
+  card.interval = 30;
+  card.nextReview = now + 30 * DAY;
+  return card;
+}
+
+function markWrong(card, now = Date.now()) {
+  card.learned = false;
+  card.reviews = (card.reviews || 0) + 1;
+  card.ease = Math.max(1.3, (card.ease || 2.5) - 0.2);
+  card.interval = 0;
+  card.nextReview = now + 10 * MIN; // study again soon
+  return card;
+}
+
+/** Grade a typed answer. Returns { ok, accepted } (accepted = variants). */
+function gradeTyped(card, typed) {
+  const variants = trVariants(card.translation || '');
+  return { ok: trMatches(card.translation || '', typed), accepted: variants };
+}
+
+/** Highlight the word inside its sentence. */
+function highlightWord(sentence, word) {
+  const i = String(sentence).toLowerCase().indexOf(String(word).toLowerCase());
+  if (i === -1) return esc(sentence);
+  return esc(sentence.slice(0, i)) + '<mark>' + esc(sentence.slice(i, i + String(word).length)) + '</mark>' + esc(sentence.slice(i + String(word).length));
+}
+
+/** Progressive letter hint: first k chars + dots. */
+function letterHint(gloss, level) {
+  const first = String(gloss || '').split(',')[0].trim();
+  const k = Math.min(first.length - 1, level * 2);
+  if (k <= 0) return '•'.repeat(Math.max(first.length, 3));
+  return first.slice(0, k) + '•'.repeat(Math.max(first.length - k, 1));
+}
 
 /* ---------- boot ---------- */
 document.addEventListener('DOMContentLoaded', async () => {
   ({ words = [] } = await chrome.storage.local.get('words'));
-  $('#words-n').textContent = words.length;
-  // Backfill Turkish glosses for words saved before v0.2.0 or via
-  // the content script (offline dict first, API if enabled).
+  // Backfill Turkish glosses + English definitions (old entries +
+  // content-script saves). Sequential to respect free-API limits.
   try {
     const { trTranslate = true } = await chrome.storage.sync.get('trTranslate');
-    let changed = false;
-    for (const w of words) {
+    const missing = words.filter((w) => !w.translation || !w.definition);
+    let n = 0, changed = false;
+    for (const w of missing) {
+      n++;
+      $('#progress-label').textContent = `Anlamlar yükleniyor (${n}/${missing.length})…`;
       if (!w.translation && typeof ensureTranslation === 'function') {
         await ensureTranslation(w, trTranslate);
         if (w.translation) changed = true;
       }
+      if (typeof ensureDefinition === 'function') {
+        const before = w.definition;
+        await ensureDefinition(w);
+        if (w.definition !== before) changed = true;
+      }
     }
     if (changed) await persist();
-  } catch { /* offline — quiz works without glosses */ }
+  } catch { /* offline — quiz works with word + sentence alone */ }
   queue = words.filter((w) => w.nextReview <= Date.now());
   shuffle(queue);
-  wireTabs(); wireQuiz(); renderList();
+  wireTabs(); wireQuiz(); renderList(); updateCounters();
   if (location.hash === '#words') selectTab('words');
   nextCard();
 });
@@ -84,68 +113,129 @@ function selectTab(which) {
 
 /* ---------- quiz ---------- */
 function wireQuiz() {
-  $('#btn-hint').onclick = () => {
-    $('#quiz-tr').hidden = false;
-    $('#btn-hint').disabled = true;
-  };
-  $('#btn-reveal').onclick = () => {
-    $('#btn-reveal').hidden = true;
-    $('#answer-zone').hidden = false;
-    $('#quiz-answer').textContent = current.word;
-    $('#quiz-sentence').innerHTML = esc(current.sentence); // reveal full sentence
-  };
-  document.querySelectorAll('.grade').forEach((b) => {
-    b.onclick = async () => {
-      schedule(current, Number(b.dataset.g));
-      doneThisSession++;
-      await persist();
-      nextCard();
-    };
+  $('#btn-check').onclick = check;
+  $('#quiz-input').addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    if (!$('#feedback').hidden) nextCard(); // Enter on feedback = next
+    else check();
   });
+  $('#btn-hint').onclick = () => {
+    hintLevel++;
+    stats.streak = 0; // hints break the streak — recall honestly!
+    updateCounters();
+    $('#quiz-tr').hidden = false;
+    $('#quiz-tr').textContent = `🇹🇷 ${letterHint(current.translation, hintLevel)}`;
+  };
+}
+
+function updateCounters() {
+  const learned = words.filter((w) => w.learned).length;
+  $('#learned-n').textContent = learned;
+  $('#total-n').textContent = words.length;
+  $('#streak').textContent = stats.streak;
 }
 
 function nextCard() {
   current = queue.shift() || null;
+  hintLevel = 0;
   const total = doneThisSession + queue.length + (current ? 1 : 0);
   $('#progress-fill').style.width = total ? `${(doneThisSession / total) * 100}%` : '0%';
   if (!current) {
     $('#quiz-card').hidden = true;
-    $('#done-card').hidden = words.length === 0 ? true : false;
-    $('#progress-label').textContent = words.length === 0
+    const empty = words.length === 0;
+    $('#done-card').hidden = empty ? true : false;
+    $('#progress-label').textContent = empty
       ? 'Your deck is empty — double-click words while you read to save them.'
-      : `Session complete: ${doneThisSession} review${doneThisSession === 1 ? '' : 's'}. 🎉`;
-    if (words.length === 0) $('#done-card').hidden = true;
+      : `Oturum bitti: ${stats.correct} doğru, ${stats.wrong} tekrar. 🎉`;
+    updateCounters();
     return;
   }
   $('#done-card').hidden = true;
   $('#quiz-card').hidden = false;
-  $('#btn-reveal').hidden = false;
-  $('#answer-zone').hidden = true;
-  // Turkish hint starts hidden on every card.
+  $('#feedback').hidden = true;
+  $('#feedback').innerHTML = '';
+  $('#quiz-input').value = '';
+  $('#quiz-input').disabled = false;
+  $('#btn-check').disabled = false;
   $('#quiz-tr').hidden = true;
-  $('#btn-hint').hidden = !current.translation;
-  $('#btn-hint').disabled = false;
-  $('#progress-label').textContent = `Card ${doneThisSession + 1} of ${total} · from ${current.source}`;
-  $('#quiz-meta').textContent = `from ${current.source}`;
-  $('#quiz-sentence').textContent = blankWord(current.sentence, current.word);
-  if (current.translation) $('#quiz-tr').textContent = `🇹🇷 ${current.translation}`;
+  $('#quiz-word').textContent = current.word;
+  // English definition as the recall prompt (with phonetic + POS).
+  const hasDef = Boolean(current.definition);
+  $('#quiz-def').hidden = !hasDef;
+  if (hasDef) {
+    $('#quiz-def').innerHTML = `${current.pos ? `<span class="pill">${esc(current.pos)}</span> ` : ''}“${esc(current.definition)}”${current.phonetic ? ` <span class="muted">/${esc(current.phonetic)}/</span>` : ''}`;
+  }
+  $('#quiz-sentence').innerHTML = highlightWord(current.sentence, current.word);
+  $('#quiz-meta').textContent = `from ${current.source} · ${doneThisSession + 1}/${total}`;
+  updateCounters();
+  setTimeout(() => $('#quiz-input').focus(), 50);
+}
+
+async function check() {
+  if (!current) return;
+  const typed = $('#quiz-input').value;
+  if (!normTr(typed)) { $('#quiz-input').focus(); return; }
+  const { ok, accepted } = gradeTyped(current, typed);
+  $('#quiz-input').disabled = true;
+  $('#btn-check').disabled = true;
+  if (ok) {
+    const noHint = hintLevel === 0;
+    markLearned(current);
+    doneThisSession++;
+    stats.correct++;
+    if (noHint) stats.streak++;
+    await persist();
+    showFeedback(true, null);
+  } else {
+    markWrong(current);
+    queue.push(current); // study again later this session
+    doneThisSession++;
+    stats.wrong++;
+    stats.streak = 0;
+    await persist();
+    showFeedback(false, { typed, accepted });
+  }
+  updateCounters();
+  renderList($('#search') ? $('#search').value : '');
+}
+
+function showFeedback(ok, info) {
+  const box = $('#feedback');
+  box.hidden = false;
+  if (ok) {
+    box.innerHTML = `<div class="fb ok">
+      <strong>Doğru! 🎉</strong> <em>${esc(current.word)}</em> = <strong>${esc(current.translation || '')}</strong><br>
+      <span class="muted small">Öğrenildi olarak işaretlendi — 30 gün sonra tekrar.</span><br>
+      <button class="btn primary small" id="btn-next">Sonraki → (Enter)</button>
+    </div>`;
+  } else {
+    box.innerHTML = `<div class="fb bad">
+      <strong>Tekrar çalışalım 📚</strong><br>
+      Yazdığın: <s>${esc(info.typed)}</s><br>
+      Doğrusu: <em>${esc(current.word)}</em> = <strong>${esc(accepted[0] || current.translation || '')}</strong>
+      ${accepted.length > 1 ? `<br><span class="muted small">Diğer kabul edilenler: ${esc(accepted.slice(1).join(' · '))}</span>` : ''}<br>
+      <span class="muted small">Bu kart desteye geri eklendi — birazdan yine gelecek.</span><br>
+      <button class="btn primary small" id="btn-next">Sonraki → (Enter)</button>
+    </div>`;
+  }
+  $('#btn-next').onclick = nextCard;
 }
 
 /* ---------- word list ---------- */
 function renderList(filter = '') {
-  const q = filter.toLowerCase();
+  const q = normTr(filter);
   const items = words
-    .filter((w) => !q || w.word.includes(q) || w.sentence.toLowerCase().includes(q))
+    .filter((w) => !q || normTr(w.word).includes(q) || normTr(w.sentence).includes(q) || normTr(w.translation || '').includes(q))
     .slice()
     .sort((a, b) => b.createdAt - a.createdAt);
   $('#words-n').textContent = words.length;
   $('#word-list').innerHTML = items.length ? items.map((w) => {
     const due = w.nextReview <= Date.now();
-    return `<div class="word-row ${due ? 'due' : ''}">
-      <div><strong>${esc(w.word)}</strong>${w.translation ? ` <span class="tr-inline">🇹🇷 ${esc(w.translation)}</span>` : ''} ${due ? '<span class="pill">due</span>' : ''}<br>
-      <span class="muted small">${esc(w.sentence)}</span><br>
+    return `<div class="word-row ${due && !w.learned ? 'due' : ''} ${w.learned ? 'learned' : ''}">
+      <div><strong>${esc(w.word)}</strong>${w.translation ? ` <span class="tr-inline">🇹🇷 ${esc(w.translation)}</span>` : ''} ${w.learned ? '<span class="pill green">öğrenildi ✓</span>' : (due ? '<span class="pill">due</span>' : '')}<br>
+      <span class="muted small">${w.definition ? `“${esc(w.definition)}”<br>` : ''}${esc(w.sentence)}</span><br>
       <span class="muted small">${esc(w.source)} · reviewed ${w.reviews || 0}×</span></div>
-      <button class="btn small danger" data-del="${w.id}" title="Delete">✕</button>
+      <div class="row-btns">${w.learned ? `<button class="btn small" data-unlearn="${w.id}" title="Tekrar çalış">↺</button>` : ''}<button class="btn small danger" data-del="${w.id}" title="Delete">✕</button></div>
     </div>`;
   }).join('') : '<p class="muted">No words match.</p>';
   document.querySelectorAll('[data-del]').forEach((b) => {
@@ -154,6 +244,15 @@ function renderList(filter = '') {
       queue = queue.filter((w) => w.id !== b.dataset.del);
       await persist();
       renderList($('#search').value);
+      updateCounters();
+    };
+  });
+  document.querySelectorAll('[data-unlearn]').forEach((b) => {
+    b.onclick = async () => {
+      const w = words.find((x) => x.id === b.dataset.unlearn);
+      if (w) { w.learned = false; w.nextReview = Date.now(); await persist(); }
+      renderList($('#search').value);
+      updateCounters();
     };
   });
   $('#search').oninput = (e) => renderList(e.target.value);
